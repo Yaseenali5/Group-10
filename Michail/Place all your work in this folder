@@ -1,1 +1,9 @@
 This is just a placeholder text file
+
+Compliance Dashboard
+
+Purpose: Offer an overview of regulatory compliance across all pollutants, showing which substances meet or exceed safety standards.
+Key Elements:
+Summary Cards: Display compliance status for each pollutant with a quick colour-coded indicator.
+Filters: Allow people to filter by location, pollutant, or compliance status to see which areas require attention.
+Pop-Up Details: Include summaries for non-compliant sites, explaining possible causes or historical data trends.
