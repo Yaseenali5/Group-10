@@ -1,139 +1,163 @@
-#include "compliancedashboard.h"
-#include <QtCharts/QPieSlice>
-#include <QSet>
+#include "ComplianceDashboard.h"
+#include <QMessageBox>
 
-ComplianceDashboard::ComplianceDashboard(QWidget *parent)
-    : QWidget(parent),
-      tableWidget(new QTableWidget(this)),
-      locationFilter(new QComboBox(this)),
-      pollutantFilter(new QComboBox(this)),
-      complianceFilter(new QComboBox(this)),
-      filterButton(new QPushButton("Apply Filters", this)),
-      pieChartButton(new QPushButton("Show Pie Chart", this)),
-      chartView(new QChartView(this)) {
-
-    // Set up main layout
-    mainLayout = new QVBoxLayout(this);
-
-    // Filters Layout
-    QHBoxLayout *filtersLayout = new QHBoxLayout();
-    filtersLayout->addWidget(new QLabel("Location:"));
-    filtersLayout->addWidget(locationFilter);
-    filtersLayout->addWidget(new QLabel("Pollutant:"));
-    filtersLayout->addWidget(pollutantFilter);
-    filtersLayout->addWidget(new QLabel("Compliance:"));
-    filtersLayout->addWidget(complianceFilter);
-    filtersLayout->addWidget(filterButton);
-    filtersLayout->addWidget(pieChartButton);
-
-    // Add filters and table to main layout
-    mainLayout->addLayout(filtersLayout);
-    mainLayout->addWidget(tableWidget);
-    mainLayout->addWidget(chartView);
-
-    // Table setup
-    tableWidget->setColumnCount(4);
-    tableWidget->setHorizontalHeaderLabels({"Pollutant", "Location", "Concentration", "Compliance"});
-
-    // Connect signals to slots
-    connect(filterButton, &QPushButton::clicked, this, &ComplianceDashboard::applyFilters);
-    connect(pieChartButton, &QPushButton::clicked, this, &ComplianceDashboard::showPieChart);
+ComplianceDashboard::ComplianceDashboard(QWidget *parent) : QWidget(parent), model(new QStandardItemModel(this)) {
+    setupUI();
+    loadData();
+    populateFilters();
+    updateChart();
 }
 
-ComplianceDashboard::~ComplianceDashboard() {
-    // Destructor
+void ComplianceDashboard::setupUI() {
+    //layout
+    QVBoxLayout *mainLayout = new QVBoxLayout(this);
+
+    //setting up filters for locations, pollutants and compliance
+    QHBoxLayout *filterLayout = new QHBoxLayout();
+    locationFilter = new QComboBox();
+    pollutantFilter = new QComboBox();
+    complianceFilter = new QComboBox();
+
+    //updates the filter as the user selects an option
+    connect(locationFilter, &QComboBox::currentIndexChanged, this, &ComplianceDashboard::updateFilter);
+    connect(pollutantFilter, &QComboBox::currentIndexChanged, this, &ComplianceDashboard::updateFilter);
+    connect(complianceFilter, &QComboBox::currentIndexChanged, this, &ComplianceDashboard::updateFilter);
+
+    filterLayout->addWidget(new QLabel("Location:"));
+    filterLayout->addWidget(locationFilter);
+    filterLayout->addWidget(new QLabel("Pollutant:"));
+    filterLayout->addWidget(pollutantFilter);
+    filterLayout->addWidget(new QLabel("Compliance:"));
+    filterLayout->addWidget(complianceFilter);
+
+    mainLayout->addLayout(filterLayout);
+
+    //views the data table 
+    dataTable = new QTableView(this);
+    dataTable->setModel(model);
+    mainLayout->addWidget(dataTable);
+
+    //compliance pie chart 
+    complianceChart = new QChartView(new QChart());
+    complianceChart->setRenderHint(QPainter::Antialiasing);
+    mainLayout->addWidget(complianceChart);
+
+    setLayout(mainLayout);
+    setWindowTitle("Compliance Dashboard");
+    resize(800, 600);
 }
 
-void ComplianceDashboard::loadData(const QVector<ComplianceData> &data) {
-    complianceData = data;
-    setupFilters();
-    populateTable(data);
-}
-
-void ComplianceDashboard::setupFilters() {
-    QSet<QString> locations, pollutants, compliances;
-    for (const auto &entry : complianceData) {
-        locations.insert(entry.location);
-        pollutants.insert(entry.pollutant);
-        compliances.insert(entry.compliance);
+void ComplianceDashboard::loadData() {
+    QFile file("");
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::critical(this, "Error", "Could not open CSV file.");
+        return;
     }
 
-    locationFilter->addItem("All");
-    locationFilter->addItems(locations.values());
+    QTextStream in(&file);
+    bool firstLine = true;
 
-    pollutantFilter->addItem("All");
-    pollutantFilter->addItems(pollutants.values());
+    while (!in.atEnd()) {
+        QString line = in.readLine();
+        if (firstLine) { 
+            firstLine = false;
+            continue;
+        }
 
-    complianceFilter->addItem("All");
-    complianceFilter->addItems(compliances.values());
-}
-
-void ComplianceDashboard::populateTable(const QVector<ComplianceData> &data) {
-    tableWidget->clearContents();
-    tableWidget->setRowCount(data.size());
-
-    for (int i = 0; i < data.size(); ++i) {
-        const auto &entry = data[i];
-
-        tableWidget->setItem(i, 0, new QTableWidgetItem(entry.pollutant));
-        tableWidget->setItem(i, 1, new QTableWidgetItem(entry.location));
-        tableWidget->setItem(i, 2, new QTableWidgetItem(QString::number(entry.concentration)));
-        tableWidget->setItem(i, 3, new QTableWidgetItem(entry.compliance));
-
-        // Add compliance-based coloring
-        if (entry.compliance == "Compliant") {
-            tableWidget->item(i, 3)->setBackground(Qt::green);
-        } else if (entry.compliance == "Near Threshold") {
-            tableWidget->item(i, 3)->setBackground(Qt::yellow);
-        } else if (entry.compliance == "Non-Compliant") {
-            tableWidget->item(i, 3)->setBackground(Qt::red);
+        QStringList fields = line.split(",");
+        if (fields.size() == 4) {
+            data.append(fields);
         }
     }
+
+    file.close();
+
+    //this adds all data to the table 
+    model->setHorizontalHeaderLabels({"Location", "Pollutant", "Level", "Compliance"});
+    for (const QList<QString> &row : data) {
+        QList<QStandardItem *> items;
+        for (const QString &cell : row) {
+            items.append(new QStandardItem(cell));
+        }
+        model->appendRow(items);
+    }
 }
 
-void ComplianceDashboard::applyFilters() {
+    //populating the filters
+void ComplianceDashboard::populateFilters() {
+    locationFilter->addItem("All Locations");
+    pollutantFilter->addItem("All Pollutants");
+    complianceFilter->addItem("All Compliance Levels");
+
+    QSet<QString> locations, pollutants, compliance;
+    for (const QList<QString> &row : data) {
+        locations.insert(row[0]);
+        pollutants.insert(row[1]);
+        compliance.insert(row[3]);
+    }
+
+    for (const QString &location : locations) {
+        locationFilter->addItem(location);
+    }
+    for (const QString &pollutant : pollutants) {
+        pollutantFilter->addItem(pollutant);
+    }
+    for (const QString &complianceLevel : compliance) {
+        complianceFilter->addItem(complianceLevel);
+    }
+}
+    // this updates the filters when user selects an option
+void ComplianceDashboard::updateFilter() {
     QString selectedLocation = locationFilter->currentText();
     QString selectedPollutant = pollutantFilter->currentText();
     QString selectedCompliance = complianceFilter->currentText();
 
-    QVector<ComplianceData> filteredData;
-    for (const auto &entry : complianceData) {
-        if ((selectedLocation == "All" || entry.location == selectedLocation) &&
-            (selectedPollutant == "All" || entry.pollutant == selectedPollutant) &&
-            (selectedCompliance == "All" || entry.compliance == selectedCompliance)) {
-            filteredData.append(entry);
+    model->removeRows(0, model->rowCount()); 
+
+    for (const QList<QString> &row : data) {
+        bool matches = true;
+
+        if (selectedLocation != "All Locations" && row[0] != selectedLocation) {
+            matches = false;
+        }
+        if (selectedPollutant != "All Pollutants" && row[1] != selectedPollutant) {
+            matches = false;
+        }
+        if (selectedCompliance != "All Compliance Levels" && row[3] != selectedCompliance) {
+            matches = false;
+        }
+
+        if (matches) {
+            QList<QStandardItem *> items;
+            for (const QString &cell : row) {
+                items.append(new QStandardItem(cell));
+            }
+            model->appendRow(items);
         }
     }
 
-    populateTable(filteredData);
+    updateChart();
 }
+    //updates the chart depending on what is selected
+void ComplianceDashboard::updateChart() {
+    int compliantCount = 0;
+    int nonCompliantCount = 0;
 
-void ComplianceDashboard::showPieChart() {
-    QPieSeries *series = new QPieSeries();
-
-    int compliant = 0, nearThreshold = 0, nonCompliant = 0;
-    for (const auto &entry : complianceData) {
-        if (entry.compliance == "Compliant") compliant++;
-        else if (entry.compliance == "Near Threshold") nearThreshold++;
-        else if (entry.compliance == "Non-Compliant") nonCompliant++;
+    for (int row = 0; row < model->rowCount(); ++row) {
+        QString compliance = model->item(row, 3)->text();
+        if (compliance == "Compliant") {
+            compliantCount++;
+        } else if (compliance == "Non-Compliant") {
+            nonCompliantCount++;
+        }
     }
 
-    series->append("Compliant", compliant);
-    series->append("Near Threshold", nearThreshold);
-    series->append("Non-Compliant", nonCompliant);
-
-    QPieSlice *sliceCompliant = series->slices().at(0);
-    sliceCompliant->setBrush(Qt::green);
-
-    QPieSlice *sliceNearThreshold = series->slices().at(1);
-    sliceNearThreshold->setBrush(Qt::yellow);
-
-    QPieSlice *sliceNonCompliant = series->slices().at(2);
-    sliceNonCompliant->setBrush(Qt::red);
+    QPieSeries *series = new QPieSeries();
+    series->append("Compliant", compliantCount);
+    series->append("Non-Compliant", nonCompliantCount);
 
     QChart *chart = new QChart();
     chart->addSeries(series);
-    chart->setTitle("Compliance Distribution");
-
-    chartView->setChart(chart);
+    chart->setTitle("Compliance Overview");
+    complianceChart->setChart(chart);
 }
