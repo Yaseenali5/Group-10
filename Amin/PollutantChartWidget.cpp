@@ -6,7 +6,6 @@
 #include <QtCharts/QValueAxis>
 #include <QToolTip>
 #include <QCoreApplication>
-#include <algorithm>
 
 using namespace QtCharts;
 
@@ -28,34 +27,30 @@ void PollutantChartWidget::loadModelData(const QString &filename) {
 }
 
 void PollutantChartWidget::createChart() {
-    updateChartBasedOnSearch("");
+    updateChartBasedOnSearch(""); // Initialize with all data
 }
 
 void PollutantChartWidget::updateChartBasedOnSearch(const QString &searchTerm) {
     QBarSeries *newSeries = new QBarSeries();
-    std::vector<double> results;
 
-    for (auto it = dataset.begin(); it != dataset.end(); ++it) {
-        if (QString::fromStdString(it->getDeterminandDefinition()).contains(searchTerm, Qt::CaseInsensitive)) {
-            results.push_back(it->getResult());
-        }
-    }
-
-    std::sort(results.begin(), results.end());
-    double q1 = results[results.size() * 25 / 100];  // 25th percentile
-    double q3 = results[results.size() * 75 / 100];  // 75th percentile
+    // Hypothetical thresholds for simplification
+    double lowThreshold = 0.0001;  // Threshold for green
+    double highThreshold = 0.0010; // Threshold for red, amber in between
 
     for (auto it = dataset.begin(); it != dataset.end(); ++it) {
         if (QString::fromStdString(it->getDeterminandDefinition()).contains(searchTerm, Qt::CaseInsensitive)) {
             QBarSet *set = new QBarSet(QString::fromStdString(it->getDeterminandDefinition()));
             double result = it->getResult();
-            if (result < q1) {
-                set->setColor(Qt::green);
-            } else if (result < q3) {
-                set->setColor(QColor(255, 191, 0));  // Amber
+
+            // Apply color based on the threshold
+            if (result < lowThreshold) {
+                set->setColor(Qt::green); // Green for low concentrations
+            } else if (result >= lowThreshold && result <= highThreshold) {
+                set->setColor(QColor(255, 191, 0)); // Amber for caution
             } else {
-                set->setColor(Qt::red);
+                set->setColor(Qt::red); // Red for high concentrations
             }
+
             *set << result;
             newSeries->append(set);
         }
@@ -65,7 +60,6 @@ void PollutantChartWidget::updateChartBasedOnSearch(const QString &searchTerm) {
     chart->removeAllSeries();
     chart->addSeries(newSeries);
     chart->createDefaultAxes();
-
     setupConnections();
 }
 
@@ -74,6 +68,6 @@ void PollutantChartWidget::setupConnections() {
     connect(series, &QBarSeries::hovered, this, [&](bool status, int index, QBarSet *bar) {
         QString label = QString::fromStdString(dataset.at(index).getDeterminandDefinition());
         double result = bar->at(0);
-        QToolTip::showText(QCursor::pos(), QString("Substance: %1\nConcentration: %2 ug/l").arg(label, QString::number(result)));
+        QToolTip::showText(QCursor::pos(), QString("Pollutant: %1\nConcentration: %2 ug/l").arg(label, QString::number(result)));
     });
 }
