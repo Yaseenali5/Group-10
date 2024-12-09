@@ -1,0 +1,4 @@
+/uolstore/home/users/sc23ab/comp2811(ui)/grp_prj/it_final/build/CMakeFiles/final.dir
+/uolstore/home/users/sc23ab/comp2811(ui)/grp_prj/it_final/build/CMakeFiles/edit_cache.dir
+/uolstore/home/users/sc23ab/comp2811(ui)/grp_prj/it_final/build/CMakeFiles/rebuild_cache.dir
+/uolstore/home/users/sc23ab/comp2811(ui)/grp_prj/it_final/build/CMakeFiles/final_autogen.dir
