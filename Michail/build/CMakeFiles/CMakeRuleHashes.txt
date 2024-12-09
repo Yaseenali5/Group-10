@@ -1,0 +1,5 @@
+# Hashes of file build rules.
+d4b78145aafd0e35845ac5ea763e004b src/moc_ComplianceWindow.cpp
+21eeddb96291561e491896da5cf8a721 src/moc_WQDataset.cpp
+830c29e190ebd48a2f565943e30e1752 src/moc_WQSample.cpp
+5fc7a515b656daf6de1a50d74f7dd1e4 src/moc_WQTableModel.cpp

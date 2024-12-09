@@ -1,0 +1,3 @@
+/Users/michaelbarkovski/documents/UNI/UserInterfaces/cw3/build/CMakeFiles/ComplianceDashboard.dir
+/Users/michaelbarkovski/documents/UNI/UserInterfaces/cw3/build/CMakeFiles/edit_cache.dir
+/Users/michaelbarkovski/documents/UNI/UserInterfaces/cw3/build/CMakeFiles/rebuild_cache.dir

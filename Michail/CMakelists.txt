@@ -1,0 +1,30 @@
+cmake_minimum_required(VERSION 3.10)
+project(ComplianceDashboard)
+
+set(CMAKE_CXX_STANDARD 17)
+
+find_package(Qt6 REQUIRED COMPONENTS Widgets Charts)
+
+set(SOURCE_FILES
+    src/main.cpp
+    src/ComplianceWindow.cpp
+    src/WQTableModel.cpp
+    src/WQDataset.cpp
+    src/WQSample.cpp
+)
+
+set(HEADER_FILES
+    src/ComplianceWindow.hpp
+    src/WQTableModel.hpp
+    src/WQDataset.hpp
+    src/WQSample.hpp
+)
+
+qt6_wrap_cpp(MOC_SOURCES ${HEADER_FILES})
+
+add_executable(ComplianceDashboard ${SOURCE_FILES} ${MOC_SOURCES})
+
+target_link_libraries(ComplianceDashboard
+    Qt6::Widgets
+    Qt6::Charts
+)

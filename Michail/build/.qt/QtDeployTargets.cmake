@@ -1,0 +1,2 @@
+set(__QT_DEPLOY_TARGET_ComplianceDashboard_FILE /Users/michaelbarkovski/documents/UNI/UserInterfaces/cw3/build/ComplianceDashboard)
+set(__QT_DEPLOY_TARGET_ComplianceDashboard_TYPE EXECUTABLE)
